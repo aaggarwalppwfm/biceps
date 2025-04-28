@@ -4,19 +4,12 @@ param appServiceName string
 param appServicePlanName string
 param location string
 param runtimeStack string
-param appSettings object = {}
+param appSettings array = []
 param tags object = {}
 param enableAppInsights bool = true
 
 var appNameWithoutPrefix = replace(appServiceName, '^(app|func)-ppwfm-', '')
 var appInsightsName = 'appi-ppwfm-${appNameWithoutPrefix}'
-
-var appSettingsArray = empty(appSettings) ? [] : [
-  for k in union([], keys(appSettings)): {
-    name: k
-    value: appSettings[k]
-  }
-]
 
 resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppInsights) {
   name: appInsightsName
@@ -48,7 +41,7 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
           name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
           value: '~3'
         }
-      ] + appSettingsArray
+      ] + appSettings
       linuxFxVersion: contains(runtimeStack, 'DOTNETCORE') ? runtimeStack : null
       netFrameworkVersion: contains(runtimeStack, 'v') ? runtimeStack : null
     }
