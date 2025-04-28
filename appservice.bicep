@@ -11,9 +11,9 @@ param enableAppInsights bool = true
 var appNameWithoutPrefix = replace(appServiceName, '^(app|func)-ppwfm-', '')
 var appInsightsName = 'appi-ppwfm-${appNameWithoutPrefix}'
 
-
+// Correct FIX: Use [key, value] syntax
 var appSettingsArray = [
-  for key in union(appSettings, {}): {
+  for key in appSettings: {
     name: key
     value: appSettings[key]
   }
