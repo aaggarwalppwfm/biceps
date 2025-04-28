@@ -11,7 +11,18 @@ param enableAppInsights bool = true
 var appNameWithoutPrefix = replace(appServiceName, '^(app|func)-ppwfm-', '')
 var appInsightsName = 'appi-ppwfm-${appNameWithoutPrefix}'
 
-var baseAppSettings = [
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppInsights) {
+  name: appInsightsName
+  location: location
+  tags: tags
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+  }
+}
+
+// Only add App Insights settings if enabled
+var baseAppSettings = enableAppInsights ? [
   {
     name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
     value: appInsights.properties.InstrumentationKey
@@ -24,19 +35,10 @@ var baseAppSettings = [
     name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
     value: '~3'
   }
-]
+] : []
 
+// Merge app insights settings + custom app settings
 var finalAppSettings = baseAppSettings + appSettings
-
-resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppInsights) {
-  name: appInsightsName
-  location: location
-  tags: tags
-  kind: 'web'
-  properties: {
-    Application_Type: 'web'
-  }
-}
 
 resource appService 'Microsoft.Web/sites@2022-03-01' = {
   name: appServiceName
