@@ -1,0 +1,22 @@
+name: Bicep Lint
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Bicep
+        run: az bicep install
+
+      - name: Validate all Bicep files
+        run: |
+          for file in $(find . -name "*.bicep"); do
+            az bicep build --file $file
+          done
