@@ -20,7 +20,12 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppI
     Application_Type: 'web'
   }
 }
-
+var appSettingsArray = [
+  for key in union([], keys(appSettings)): {
+    name: key
+    value: appSettings[key]
+  }
+]
 resource appService 'Microsoft.Web/sites@2022-03-01' = {
   name: appServiceName
   location: location
@@ -41,12 +46,7 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
           name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
           value: '~3'
         }
-      ] + [
-        for key in appSettings: {
-          name: key
-          value: appSettings[key]
-        }
-      ]
+      ] + appSettingsArray
       linuxFxVersion: contains(runtimeStack, 'DOTNETCORE') ? runtimeStack : null
       netFrameworkVersion: contains(runtimeStack, 'v') ? runtimeStack : null
     }
