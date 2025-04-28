@@ -1,5 +1,8 @@
 // appservice.bicep
 
+@allowed(['dev', 'prod'])
+param environment string
+
 param appServiceName string
 param appServicePlanName string
 param location string
@@ -21,9 +24,15 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppI
   }
 }
 
-// Conditionally build the full appSettings array
+// Build final app settings array
 var finalAppSettings = [
-  // Add app insights settings only if enabled
+  // Always add WEBSITE_RUN_FROM_PACKAGE = 1
+  {
+    name: 'WEBSITE_RUN_FROM_PACKAGE'
+    value: '1'
+  }
+
+  // Conditionally inject AppInsights settings
   ...(enableAppInsights ? [
     {
       name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
@@ -38,7 +47,8 @@ var finalAppSettings = [
       value: '~3'
     }
   ] : [])
-  // Always add user appSettings
+
+  // Add any additional user-supplied app settings
   ...appSettings
 ]
 
@@ -52,6 +62,7 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
       appSettings: finalAppSettings
       linuxFxVersion: contains(runtimeStack, 'DOTNETCORE') ? runtimeStack : null
       netFrameworkVersion: contains(runtimeStack, 'v') ? runtimeStack : null
+      alwaysOn: environment == 'prod'
     }
     httpsOnly: true
   }
