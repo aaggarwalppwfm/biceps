@@ -11,6 +11,14 @@ param enableAppInsights bool = true
 var appNameWithoutPrefix = replace(appServiceName, '^(app|func)-ppwfm-', '')
 var appInsightsName = 'appi-ppwfm-${appNameWithoutPrefix}'
 
+
+var appSettingsArray = [
+  for key in union(appSettings, {}): {
+    name: key
+    value: appSettings[key]
+  }
+]
+
 resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppInsights) {
   name: appInsightsName
   location: location
@@ -20,12 +28,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppI
     Application_Type: 'web'
   }
 }
-var appSettingsArray = [
-  for key in appSettings: {
-    name: key
-    value: appSettings[key]
-  }
-]
+
 resource appService 'Microsoft.Web/sites@2022-03-01' = {
   name: appServiceName
   location: location
