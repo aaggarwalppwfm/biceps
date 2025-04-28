@@ -21,7 +21,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppI
   }
 }
 var appSettingsArray = [
-  for key in union([], keys(appSettings)): {
+  for key in appSettings: {
     name: key
     value: appSettings[key]
   }
