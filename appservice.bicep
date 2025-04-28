@@ -21,6 +21,25 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppI
   }
 }
 
+// Define base app settings if Insights enabled
+var appInsightsSettings = [
+  {
+    name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+    value: appInsights.properties.InstrumentationKey
+  }
+  {
+    name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+    value: appInsights.properties.ConnectionString
+  }
+  {
+    name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
+    value: '~3'
+  }
+]
+
+// Compute final app settings based on enableAppInsights
+var finalAppSettings = enableAppInsights ? (appInsightsSettings + appSettings) : appSettings
+
 resource appService 'Microsoft.Web/sites@2022-03-01' = {
   name: appServiceName
   location: location
@@ -28,20 +47,7 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
   properties: {
     serverFarmId: appServicePlanName
     siteConfig: {
-      appSettings: enableAppInsights ? [
-        {
-          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-          value: appInsights.properties.InstrumentationKey
-        }
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: appInsights.properties.ConnectionString
-        }
-        {
-          name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
-          value: '~3'
-        }
-      ] + appSettings : appSettings
+      appSettings: finalAppSettings
       linuxFxVersion: contains(runtimeStack, 'DOTNETCORE') ? runtimeStack : null
       netFrameworkVersion: contains(runtimeStack, 'v') ? runtimeStack : null
     }
