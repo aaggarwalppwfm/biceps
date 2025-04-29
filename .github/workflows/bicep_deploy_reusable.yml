@@ -15,6 +15,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout caller repository
         uses: actions/checkout@v4
@@ -24,40 +25,32 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy Azure Resources (Bicep)
-        run: |
-          echo "Starting Bicep deployment for environment: ${{ inputs.env }}"
-
-          az deployment group create \
-            --name ${{ inputs.env }}-deployment-${{ github.run_number }} \
-            --resource-group ${{ inputs.resource_group_name }} \
-            --template-file infrastructure/main.bicep \
-            --parameters infrastructure/environments/${{ inputs.env }}.bicepparam \
-            --verbose
-
-          echo "Bicep deployment completed."
-
+      - name: Deploy Azure Resources (via shared action)
+        uses: your-org/biceps/actions/deploy-infra@main
+        with:
+          environment_name: ${{ inputs.env }}
+          resource_group: ${{ inputs.resource_group_name }}
+          
       - name: Create Deployment Metadata
-        if: ${{ inputs.env == 'prod' }}
         run: |
           echo "Deployed commit: ${{ github.sha }}" > deployment-info.txt
-          echo "Environment: prod" >> deployment-info.txt
+          echo "Environment: ${{ inputs.env }}" >> deployment-info.txt
           echo "Branch: ${{ github.ref }}" >> deployment-info.txt
           echo "Run number: ${{ github.run_number }}" >> deployment-info.txt
           echo "Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> deployment-info.txt
 
       - name: Upload Deployment Metadata
-        if: ${{ inputs.env == 'prod' }}
         uses: actions/upload-artifact@v4
         with:
-          name: deployment-metadata
+          name: deployment-metadata-${{ inputs.env }}-${{ github.run_number }}
           path: deployment-info.txt
 
-      - name: Create Git Tag for Production Deployment
-        if: ${{ inputs.env == 'prod' }}
+      - name: Create Git Tag for Deployment
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git fetch --all
-          git tag deploy-v${{ github.run_number }}
-          git push origin deploy-v${{ github.run_number }}
+          git tag deploy-${{ inputs.env }}-v${{ github.run_number }}
+          git push origin deploy-${{ inputs.env }}-v${{ github.run_number }}
+
+     
