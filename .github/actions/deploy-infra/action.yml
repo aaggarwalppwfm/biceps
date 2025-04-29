@@ -1,0 +1,28 @@
+# actions/deploy-infra/action.yml (in shared bicep repo)
+
+name: Deploy Infrastructure
+description: Composite action to deploy Azure Bicep templates
+inputs:
+  environment_name:
+    description: 'Environment name (dev, prod, etc.)'
+    required: true
+  resource_group:
+    description: 'Resource Group name to deploy into'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Deploy Bicep Template
+      shell: bash
+      run: |
+        echo "Deploying to ${{ inputs.environment_name }} environment"
+
+        az deployment group create \
+          --name ${{ inputs.environment_name }}-deployment-${{ github.run_number }} \
+          --resource-group ${{ inputs.resource_group }} \
+          --template-file ./infrastructure/main.bicep \
+          --parameters ./infrastructure/environments/${{ inputs.environment_name }}.bicepparam \
+          --verbose
+
+        echo "Deployment to ${{ inputs.environment_name }} environment completed successfully."
