@@ -11,11 +11,14 @@ on:
       resource_group_name:
         required: true
         type: string
+      environment_name:
+        required: false
+        type: string
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    environment: ${{ inputs.environment_name }}
     steps:
       - name: Checkout caller repository
         uses: actions/checkout@v4
