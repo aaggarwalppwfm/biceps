@@ -11,7 +11,9 @@ on:
       resource_group_name:
         required: true
         type: string
-  
+    secrets:
+      azure_credentials:
+        required: true
 
 jobs:
   deploy:
@@ -24,7 +26,7 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-           creds: ${{ secrets.AZURE_CREDENTIALS }}
+           creds: ${{ secrets.azure_credentials }}
 
 
       - name: Deploy Azure Resources (via shared action)
