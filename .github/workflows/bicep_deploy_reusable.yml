@@ -30,7 +30,6 @@ jobs:
       - name: Deploy Azure Resources (via shared action)
         uses: aaggarwalppwfm/biceps/.github/actions/deploy-infra@main
         with:
-          environment_name: ${{ inputs.env }}
           resource_group: ${{ inputs.resource_group_name }}
           
       - name: Create Deployment Metadata
