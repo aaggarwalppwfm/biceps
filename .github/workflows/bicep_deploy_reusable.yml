@@ -19,7 +19,11 @@ jobs:
     steps:
       - name: Checkout caller repository
         uses: actions/checkout@v4
-
+        
+      - name: Confirm AZURE_CREDENTIALS is available
+        if: ${{ !secrets.AZURE_CREDENTIALS }}
+        run: echo " AZURE_CREDENTIALS is missing!"
+        
       - name: Azure Login
         uses: azure/login@v2
         with:
