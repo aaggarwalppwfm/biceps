@@ -46,7 +46,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: aaggarwalppwfm/biceps
-          path: biceps
+          path: ../biceps
           token: ${{ secrets.GITHUB_TOKEN }}  
 
       - name: Azure Login
