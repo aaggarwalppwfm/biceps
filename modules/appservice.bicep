@@ -13,7 +13,8 @@ param tags object = {}
 param enableAppInsights bool = true
 
 var appNameWithoutPrefix = replace(appServiceName, '^(app|func)-ppwfm-', '')
-var appInsightsName = 'appi-ppwfm-${appNameWithoutPrefix}'
+var appInsightsName = 'appi-${appServiceName}'
+
 
 resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppInsights) {
   name: appInsightsName
