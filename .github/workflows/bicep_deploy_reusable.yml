@@ -1,23 +1,19 @@
 # ┌────────────────────────────────────────────────────────────────────────────┐
-# │ Folder Structure on GitHub Runner     
-# │
-# │GitHub Actions checks out your repo into the path:
-# │
-# │/home/runner/work/<repo-name>/<repo-name>/│
-# │ checkout caller repo                                                       │
-# │ /home/runner/work/SampleDotnetframework47MVC/                             │
-# │ ├── SampleDotnetframework47MVC/        # ⬅ your app repo (checked out by   │
-# │ │   ├── infrastructure/                #    default GitHub Actions         │
-# │ │   │   └── main.bicep                 #    contains main deployment logic │
-# │ │   └── .github/                       #    holds workflows                │
-# │   
-# │ checkout shared repo
-# │ ├── biceps/                            # ⬅ shared Bicep modules repo       │
-# │ │   └── modules/                       #    checked out with path: biceps  │
-# │ │       └── appservice/                                                   │
-# │ │           └── appservice.bicep                                           │
+# │ Folder Structure on GitHub Runner                                          │
+# │                                                                            │
+# │ GitHub Actions checks out your repo into:                                  │
+# │   /home/runner/work/<repo-name>/<repo-name>/                               │
+# │                                                                            │
+# │ After both checkouts:                                                      │
+# │                                                                            │
+# │ /home/runner/work/SampleDotnetframework47MVC/                              │
+# │ ├── app/                          # ⬅ your app repo                        │
+# │ │   └── infrastructure/           #    contains main.bicep                 │
+# │ │       └── main.bicep                                                   │
+# │ ├── shared-bicep/                 # ⬅ shared modules repo                  │
+# │ │   └── modules/appservice/       #    shared appservice.bicep module      │
+# │ │       └── appservice.bicep                                              │
 # └────────────────────────────────────────────────────────────────────────────┘
-
 
 name: Reusable Bicep Deploy Workflow
 
@@ -39,28 +35,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout caller repository
-        uses: actions/checkout@v4
-
-      - name: Checkout shared Bicep repo
+      # ✅ Checkout shared infrastructure modules repo
+      - name: Checkout shared Bicep modules
         uses: actions/checkout@v4
         with:
           repository: aaggarwalppwfm/biceps
-          path: ../biceps
-          token: ${{ secrets.GITHUB_TOKEN }}  
+          path: shared-bicep
+          token: ${{ secrets.GITHUB_TOKEN }}
 
+      # ✅ Checkout the caller (app) repo under ./app
+      - name: Checkout calling app repo
+        uses: actions/checkout@v4
+        with:
+          path: app
+
+      # ✅ Azure Login using service principal credentials from caller
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.azure_credentials }}
 
+      # ✅ Deploy Bicep template by calling the composite action
       - name: Deploy Azure Resources (via shared action)
-        uses: ./biceps/.github/actions/deploy-infra  
+        uses: ./shared-bicep/.github/actions/deploy-infra
         with:
           resource_group: ${{ inputs.resource_group_name }}
           environment_name: ${{ inputs.env }}
+          app_working_dir: ./app
 
+      # ✅ Generate metadata file with context info (commit, branch, URL, etc.)
       - name: Create Deployment Metadata
+        working-directory: ./app
         run: |
           echo "Deployed commit: ${{ github.sha }}" > deployment-info.txt
           echo "Environment: ${{ inputs.env }}" >> deployment-info.txt
@@ -68,13 +73,16 @@ jobs:
           echo "Run number: ${{ github.run_number }}" >> deployment-info.txt
           echo "Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> deployment-info.txt
 
+      # ✅ Upload deployment metadata as artifact
       - name: Upload Deployment Metadata
         uses: actions/upload-artifact@v4
         with:
           name: deployment-metadata-${{ inputs.env }}-${{ github.run_number }}
-          path: deployment-info.txt
+          path: ./app/deployment-info.txt
 
+      # ✅ Create a tag for the deployment in the git repo
       - name: Create Git Tag for Deployment
+        working-directory: ./app
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
