@@ -56,7 +56,7 @@ jobs:
           echo "Listing app/infrastructure:"
           ls -la app/infrastructure
           echo "Listing shared-bicep:"
-          ls -la shared-bicep/modules/appservice
+          ls -la shared-bicep/modules
 
       # ✅ Azure Login using service principal credentials from caller
       - name: Azure Login
