@@ -13,6 +13,10 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Install Bicep CLI
+      run: az bicep install
+      shell: bash
+      
     - name: Deploy Bicep Template
       shell: bash
       run: |
