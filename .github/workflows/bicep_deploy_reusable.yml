@@ -48,6 +48,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: app
+          
+      - name: List folder contents for sanity check
+        run: |
+          echo "Listing root:"
+          ls -la
+          echo "Listing app/infrastructure:"
+          ls -la app/infrastructure
+          echo "Listing shared-bicep:"
+          ls -la shared-bicep/modules/appservice
 
       # ✅ Azure Login using service principal credentials from caller
       - name: Azure Login
