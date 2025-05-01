@@ -29,7 +29,8 @@ on:
     secrets:
       azure_credentials:
         required: true
-
+      repo_token:
+        required: true
 jobs:
   deploy:
     runs-on: ubuntu-latest
