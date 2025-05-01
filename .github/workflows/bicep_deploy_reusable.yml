@@ -33,6 +33,8 @@ jobs:
         uses: aaggarwalppwfm/biceps/.github/actions/deploy-infra@main
         with:
           resource_group: ${{ inputs.resource_group_name }}
+          environment_name: ${{ inputs.env }}
+          
           
       - name: Create Deployment Metadata
         run: |
