@@ -1,5 +1,3 @@
-# .github/workflows/bicep_deploy_reusable.yml
-
 name: Reusable Bicep Deploy Workflow
 
 on:
@@ -22,20 +20,25 @@ jobs:
     steps:
       - name: Checkout caller repository
         uses: actions/checkout@v4
-        
+
+      - name: Checkout shared Bicep repo
+        uses: actions/checkout@v4
+        with:
+          repository: aaggarwalppwfm/biceps
+          path: biceps
+          token: ${{ secrets.GITHUB_TOKEN }}  
+
       - name: Azure Login
         uses: azure/login@v2
         with:
-           creds: ${{ secrets.azure_credentials }}
-
+          creds: ${{ secrets.azure_credentials }}
 
       - name: Deploy Azure Resources (via shared action)
-        uses: aaggarwalppwfm/biceps/.github/actions/deploy-infra@main
+        uses: ./biceps/.github/actions/deploy-infra  
         with:
           resource_group: ${{ inputs.resource_group_name }}
           environment_name: ${{ inputs.env }}
-          
-          
+
       - name: Create Deployment Metadata
         run: |
           echo "Deployed commit: ${{ github.sha }}" > deployment-info.txt
@@ -57,5 +60,3 @@ jobs:
           git fetch --all
           git tag deploy-${{ inputs.env }}-v${{ github.run_number }}
           git push origin deploy-${{ inputs.env }}-v${{ github.run_number }}
-
-     
