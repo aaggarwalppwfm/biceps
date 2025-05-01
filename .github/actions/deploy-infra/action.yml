@@ -13,8 +13,15 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Install Bicep CLI
-      run: az bicep install
+    - name: Install Bicep CLI manually
+      run: |
+        curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
+        chmod +x bicep
+        sudo mv bicep /usr/local/bin/bicep
+      shell: bash
+
+    - name: Confirm Bicep install
+      run: bicep --version
       shell: bash
       
     - name: Deploy Bicep Template
