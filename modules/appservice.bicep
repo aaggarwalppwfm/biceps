@@ -12,7 +12,7 @@ param appSettings array = []
 param tags object = {}
 param enableAppInsights bool = true
 
-var appNameWithoutPrefix = replace(appServiceName, '^(app|func)-ppwfm-', '')
+
 var appInsightsName = 'appi-${appServiceName}'
 
 
