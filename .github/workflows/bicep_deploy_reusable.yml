@@ -1,5 +1,9 @@
 # ┌────────────────────────────────────────────────────────────────────────────┐
-# │ Folder Structure on GitHub Runner                                          │
+# │ Folder Structure on GitHub Runner     
+# │
+# │GitHub Actions checks out your repo into the path:
+# │
+# │/home/runner/work/<repo-name>/<repo-name>/│
 # │ checkout caller repo                                                       │
 # │ /home/runner/work/SampleDotnetframework47MVC/                             │
 # │ ├── SampleDotnetframework47MVC/        # ⬅ your app repo (checked out by   │
