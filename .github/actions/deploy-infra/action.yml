@@ -9,6 +9,11 @@ inputs:
   resource_group:
     description: 'Resource Group name to deploy into'
     required: true
+  app_working_dir:
+    description: Directory where main.bicep and parameter files live
+    required: false
+    default: '.'
+    
 
 runs:
   using: composite
@@ -33,7 +38,7 @@ runs:
       shell: bash
       run: |
         echo "Deploying to ${{ inputs.environment_name }} environment"
-
+        cd ${{ inputs.app_working_dir }}
         az deployment group create \
           --name ${{ inputs.environment_name }}-deployment-${{ github.run_number }} \
           --resource-group ${{ inputs.resource_group }} \
