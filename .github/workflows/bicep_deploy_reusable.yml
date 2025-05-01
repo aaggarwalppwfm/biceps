@@ -1,3 +1,20 @@
+# ┌────────────────────────────────────────────────────────────────────────────┐
+# │ Folder Structure on GitHub Runner                                          │
+# │ checkout caller repo                                                       │
+# │ /home/runner/work/SampleDotnetframework47MVC/                             │
+# │ ├── SampleDotnetframework47MVC/        # ⬅ your app repo (checked out by   │
+# │ │   ├── infrastructure/                #    default GitHub Actions         │
+# │ │   │   └── main.bicep                 #    contains main deployment logic │
+# │ │   └── .github/                       #    holds workflows                │
+# │   
+# │ checkout shared repo
+# │ ├── biceps/                            # ⬅ shared Bicep modules repo       │
+# │ │   └── modules/                       #    checked out with path: biceps  │
+# │ │       └── appservice/                                                   │
+# │ │           └── appservice.bicep                                           │
+# └────────────────────────────────────────────────────────────────────────────┘
+
+
 name: Reusable Bicep Deploy Workflow
 
 on:
