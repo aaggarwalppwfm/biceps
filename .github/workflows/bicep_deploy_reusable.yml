@@ -100,4 +100,4 @@ jobs:
           git config user.email "github-actions@github.com"
           git fetch --all
           git tag deploy-${{ inputs.env }}-v${{ github.run_number }}
-          git push https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} deploy-${{ inputs.env }}-v${{ github.run_number }}
+          git push https://x-access-token:${GH_TOKEN}@github.com/aaggarwalppwfm/SampleDotnetframework47MVC.git deploy-${{ inputs.env }}-v${{ github.run_number }}
