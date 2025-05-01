@@ -24,7 +24,7 @@ runs:
       run: bicep --version
       shell: bash
 
-     - name: Tell Azure CLI to use global bicep
+    - name: Tell Azure CLI to use global bicep
       run: echo "AZURE_BICEP_SKIP_NATIVE_CHECK=true" >> $GITHUB_ENV
       shell: bash
       
