@@ -13,11 +13,12 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Install Bicep CLI manually
+    - name: Download and place Bicep where az expects it
       run: |
         curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
-        chmod +x bicep
-        sudo mv bicep /usr/local/bin/bicep
+        mkdir -p ~/.azure/bin
+        mv bicep ~/.azure/bin/bicep
+        chmod +x ~/.azure/bin/bicep
       shell: bash
 
     - name: Confirm Bicep install
