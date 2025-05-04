@@ -3,20 +3,22 @@ name: Reusable CD Workflow
 on:
   workflow_call:
     inputs:
-      artifact_name:
+      env:
+        required: true
+        type: string
+      resource_group_name:
         required: true
         type: string
       app_name:
         required: true
         type: string
-      slot_name:
-        required: true
-        type: string
-      resource_group:
+      package_path:
         required: true
         type: string
     secrets:
       azure_credentials:
+        required: true
+      repo_token:
         required: true
 
 jobs:
@@ -24,29 +26,58 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout calling app repo
+        uses: actions/checkout@v4
+        with:
+          path: app
+          fetch-depth: 0
+          token: ${{ secrets.repo_token }}
+
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.azure_credentials }}
 
-      - name: Download Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ inputs.artifact_name }}
-          path: ./deploy-package
-
-      - name: Deploy to Azure Web App
+      - name: Deploy App Code to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ inputs.app_name }}
-          slot-name: ${{ inputs.slot_name }}
-          package: ./deploy-package
+          package: ${{ inputs.package_path }}
+          slot-name: ${{ inputs.env == 'prod' && 'staging' || '' }}
 
-      - name: Swap Slot into Production (only for staging slot)
-        if: inputs.slot_name == 'staging'
+      - name: Swap slot into production (prod only)
+        if: inputs.env == 'prod'
         run: |
           az webapp deployment slot swap \
             --name ${{ inputs.app_name }} \
-            --resource-group ${{ inputs.resource_group }} \
+            --resource-group ${{ inputs.resource_group_name }} \
             --slot staging \
             --target-slot production
+
+      - name: Create Deployment Metadata
+        working-directory: ./app
+        run: |
+          echo "Deployed commit: ${{ github.sha }}" > deployment-info.txt
+          echo "Environment: ${{ inputs.env }}" >> deployment-info.txt
+          echo "Branch: ${{ github.ref }}" >> deployment-info.txt
+          echo "Run number: ${{ github.run_number }}" >> deployment-info.txt
+          echo "Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> deployment-info.txt
+
+      - name: Upload Deployment Metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-metadata-${{ inputs.env }}-${{ github.run_number }}
+          path: ./app/deployment-info.txt
+
+      - name: Create Git Tag for Deployment
+        working-directory: ./app
+        env:
+          GH_TOKEN: ${{ secrets.repo_token }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git fetch --all
+          TAG_NAME="deploy-${{ inputs.env }}-v${{ github.run_number }}"
+          git tag $TAG_NAME
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          git push origin $TAG_NAME
