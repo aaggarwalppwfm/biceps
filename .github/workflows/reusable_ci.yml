@@ -12,6 +12,10 @@ on:
       artifact_name:
         required: true
         type: string
+      dotnet_version:
+        required: false
+        type: string
+        default: '7.x'
     secrets:
       repo_token:
         required: true
@@ -27,31 +31,31 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.repo_token }}
 
-      - name: Setup MSBuild
-        if: inputs.project_type == 'framework'
+      - name: Setup MSBuild for .NET Framework
+        if: ${{ inputs.project_type == 'framework' }}
         uses: microsoft/setup-msbuild@v1.1
 
-      - name: Setup .NET SDK
-        if: inputs.project_type == 'core'
+      - name: Setup .NET SDK for .NET Core
+        if: ${{ inputs.project_type == 'core' }}
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '7.x'
+          dotnet-version: ${{ inputs.dotnet_version }}
 
       - name: Restore Packages
         run: |
-          if [ "${{ inputs.project_type }}" == "framework" ]; then
-            nuget restore ${{ inputs.solution_path }}
-          else
+          if ("${{ inputs.project_type }}" -eq "framework") {
+            nuget restore "${{ inputs.solution_path }}"
+          } else {
             dotnet restore
-          fi
+          }
 
       - name: Build Project
         run: |
-          if [ "${{ inputs.project_type }}" == "framework" ]; then
-            msbuild ${{ inputs.solution_path }} /p:Configuration=Release /p:OutDir="${{ github.workspace }}\\artifacts\\"
-          else
+          if ("${{ inputs.project_type }}" -eq "framework") {
+            msbuild "${{ inputs.solution_path }}" /p:Configuration=Release /p:OutDir="${{ github.workspace }}\artifacts\"
+          } else {
             dotnet build --configuration Release --output artifacts
-          fi
+          }
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
@@ -66,7 +70,7 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git fetch --all
-          TAG_NAME="build-v${{ github.run_number }}"
-          git tag $TAG_NAME
-          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-          git push origin $TAG_NAME
+          $tag = "build-v${{ github.run_number }}"
+          git tag $tag
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git
+          git push origin $tag
