@@ -31,12 +31,12 @@ on:
         required: true
       repo_token:
         required: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # ✅ Checkout shared infrastructure modules repo
       - name: Checkout shared Bicep modules
         uses: actions/checkout@v4
         with:
@@ -44,12 +44,13 @@ jobs:
           path: shared-bicep
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # ✅ Checkout the caller (app) repo under ./app
       - name: Checkout calling app repo
         uses: actions/checkout@v4
         with:
           path: app
-          
+          fetch-depth: 0   # 👈 Required for tagging
+          token: ${{ secrets.repo_token }}
+
       - name: List folder contents for sanity check
         run: |
           echo "Listing root:"
@@ -59,13 +60,11 @@ jobs:
           echo "Listing shared-bicep:"
           ls -la shared-bicep/modules
 
-      # ✅ Azure Login using service principal credentials from caller
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.azure_credentials }}
 
-      # ✅ Deploy Bicep template by calling the composite action
       - name: Deploy Azure Resources (via shared action)
         uses: ./shared-bicep/.github/actions/deploy-infra
         with:
@@ -73,7 +72,6 @@ jobs:
           environment_name: ${{ inputs.env }}
           app_working_dir: ./app
 
-      # ✅ Generate metadata file with context info (commit, branch, URL, etc.)
       - name: Create Deployment Metadata
         working-directory: ./app
         run: |
@@ -83,13 +81,13 @@ jobs:
           echo "Run number: ${{ github.run_number }}" >> deployment-info.txt
           echo "Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> deployment-info.txt
 
-      # ✅ Upload deployment metadata as artifact
       - name: Upload Deployment Metadata
         uses: actions/upload-artifact@v4
         with:
           name: deployment-metadata-${{ inputs.env }}-${{ github.run_number }}
           path: ./app/deployment-info.txt
 
+      # ✅ Tag the commit (must be in the repo root for this to work)
       - name: Create Git Tag for Deployment
         working-directory: ./app
         env:
@@ -99,8 +97,6 @@ jobs:
           git config user.email "github-actions@github.com"
           git fetch --all
           TAG_NAME="deploy-${{ inputs.env }}-v${{ github.run_number }}"
-          REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git tag $TAG_NAME
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-          git remote -v
           git push origin $TAG_NAME
