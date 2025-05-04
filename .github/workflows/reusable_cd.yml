@@ -1,3 +1,20 @@
+# ┌────────────────────────────────────────────────────────────────────────────────┐
+# │ Folder Structure on GitHub Runner                                          │
+# │                                                                            │
+# │ GitHub Actions checks out your repo into:                                  │
+# │   /home/runner/work/<repo-name>/<repo-name>/                               │
+# │                                                                            │
+# │ After both checkouts:                                                      │
+# │                                                                            │
+# │ /home/runner/work/SampleDotnetframework47MVC/                              │
+# │ ├─ app/                          # ⬆ your app repo                        │
+# │ │   └─ infrastructure/           #    contains main.bicep                 │
+# │ │       └─ main.bicep                                                   │
+# │ └─ shared-bicep/                 # ⬆ shared modules repo                  │
+# │     └─ modules/appservice/       #    shared appservice.bicep module      │
+# │         └─ appservice.bicep                                              │
+# └────────────────────────────────────────────────────────────────────┘
+
 name: Reusable CD Workflow
 
 on:
@@ -38,16 +55,27 @@ jobs:
         with:
           creds: ${{ secrets.azure_credentials }}
 
-      - name: Check extracted artifact folder
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.package_path }}
+          path: ./build-output
+
+      - name: Display Artifact Contents
         run: |
           echo "Contents of artifact folder:"
-          ls -R ./${{ inputs.package_path }}
+          ls -R ./build-output
+
+      - name: Zip Artifact for Web App Deployment
+        run: |
+          cd build-output
+          zip -r ../app_package.zip .
 
       - name: Deploy App Code to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ inputs.app_name }}
-          package: ./${{ inputs.package_path }}
+          package: app_package.zip
           slot-name: ${{ inputs.env == 'prod' && 'staging' || '' }}
 
       - name: Swap slot into production (prod only)
