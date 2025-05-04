@@ -1,3 +1,20 @@
+# ┌────────────────────────────────────────────────────────────────────────────────┐
+# │ Folder Structure on GitHub Runner                                          │
+# │                                                                            │
+# │ GitHub Actions checks out your repo into:                                  │
+# │   /home/runner/work/<repo-name>/<repo-name>/                               │
+# │                                                                            │
+# │ After both checkouts:                                                      │
+# │                                                                            │
+# │ /home/runner/work/SampleDotnetframework47MVC/                              │
+# │ ├─ app/                          # ⬆ your app repo                        │
+# │ │   └─ infrastructure/           #    contains main.bicep                 │
+# │ │       └─ main.bicep                                                   │
+# │ └─ shared-bicep/                 # ⬆ shared modules repo                  │
+# │     └─ modules/appservice/       #    shared appservice.bicep module      │
+# │         └─ appservice.bicep                                              │
+# └────────────────────────────────────────────────────────────────────┘
+
 name: Reusable CD Workflow
 
 on:
@@ -49,9 +66,9 @@ jobs:
           echo "Contents of artifact folder:"
           ls -R ./build-output
 
-      - name: Zip Artifact for Web App Deployment
+      - name: Zip Web App Root Folder Only
         run: |
-          cd ./build-output
+          cd build-output/_PublishedWebsites/SampleDotnetframework47MVC
           zip -r ${{ github.workspace }}/app_package.zip .
 
       - name: Deploy App Code to Azure Web App
