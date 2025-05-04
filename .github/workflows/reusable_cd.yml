@@ -1,0 +1,52 @@
+name: Reusable CD Workflow
+
+on:
+  workflow_call:
+    inputs:
+      artifact_name:
+        required: true
+        type: string
+      app_name:
+        required: true
+        type: string
+      slot_name:
+        required: true
+        type: string
+      resource_group:
+        required: true
+        type: string
+    secrets:
+      azure_credentials:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.azure_credentials }}
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ./deploy-package
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ inputs.app_name }}
+          slot-name: ${{ inputs.slot_name }}
+          package: ./deploy-package
+
+      - name: Swap Slot into Production (only for staging slot)
+        if: inputs.slot_name == 'staging'
+        run: |
+          az webapp deployment slot swap \
+            --name ${{ inputs.app_name }} \
+            --resource-group ${{ inputs.resource_group }} \
+            --slot staging \
+            --target-slot production
