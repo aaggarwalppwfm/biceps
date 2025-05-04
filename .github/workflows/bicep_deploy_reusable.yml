@@ -29,7 +29,8 @@ on:
     secrets:
       azure_credentials:
         required: true
-
+      repo_token:
+        required: true
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -89,4 +90,15 @@ jobs:
           name: deployment-metadata-${{ inputs.env }}-${{ github.run_number }}
           path: ./app/deployment-info.txt
 
-    
+      - name: Create Git Tag for Deployment
+        working-directory: ./app
+        env:
+          GH_TOKEN: ${{ secrets.repo_token }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git fetch --all
+          TAG_NAME="deploy-${{ inputs.env }}-v${{ github.run_number }}"
+          REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git tag $TAG_NAME
+          git push $REPO_URL $TAG_NAME
