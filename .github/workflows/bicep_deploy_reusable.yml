@@ -101,4 +101,6 @@ jobs:
           TAG_NAME="deploy-${{ inputs.env }}-v${{ github.run_number }}"
           REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git tag $TAG_NAME
+          git remote -v
+          git branch
           git push $REPO_URL $TAG_NAME
