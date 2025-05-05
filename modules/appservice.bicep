@@ -10,6 +10,7 @@ param connectionStrings array = []
 param virtualNetworkSubnetId string = ''
 param tags object = {}
 param enableAppInsights bool = true
+param keyVaultName string = ''
 
 var appInsightsName = 'appi-${appServiceName}'
 
@@ -49,6 +50,29 @@ var finalAppSettings = [
 
 // Detect platform
 var isLinux = contains(toLower(runtimeStack), 'dotnetcore')
+
+// Optional Key Vault reference
+var keyVaultId = empty(keyVaultName) ? null : resourceId('Microsoft.KeyVault/vaults', keyVaultName)
+resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = if (!empty(keyVaultName)) {
+  name: keyVaultName
+}
+
+resource keyVaultAccess 'Microsoft.KeyVault/vaults/accessPolicies@2023-02-01' = if (!empty(keyVaultName) && length(connectionStrings) > 0) {
+  name: '${keyVault.name}/add'
+  properties: {
+    accessPolicies: [
+      {
+        tenantId: subscription().tenantId
+        objectId: appService.identity.principalId
+        permissions: {
+          keys: [ 'get', 'list' ]
+          secrets: [ 'get', 'list' ]
+          certificates: [ 'get', 'list' ]
+        }
+      }
+    ]
+  }
+}
 
 resource appService 'Microsoft.Web/sites@2022-03-01' = {
   name: appServiceName
