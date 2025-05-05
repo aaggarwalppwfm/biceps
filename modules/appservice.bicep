@@ -6,10 +6,8 @@ param appServicePlanName string
 param location string
 param runtimeStack string
 param appSettings array = []
-@allowed([null, []])
-param connectionStrings array = null
-@allowed([null, ''])
-param virtualNetworkSubnetId string = null
+param connectionStrings array = [] // default is safe empty array
+param virtualNetworkSubnetId string = '' // default is safe empty string
 param tags object = {}
 param enableAppInsights bool = true
 
@@ -66,14 +64,14 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
     clientAffinityEnabled: true
     siteConfig: {
       appSettings: finalAppSettings
-      connectionStrings: connectionStrings ?? []
+      connectionStrings: connectionStrings
       linuxFxVersion: isLinux ? runtimeStack : null
       netFrameworkVersion: !isLinux && contains(runtimeStack, 'v') ? runtimeStack : null
       alwaysOn: environment == 'prod'
       http20Enabled: true
       minTlsVersion: '1.2'
       scmMinTlsVersion: '1.2'
-      }
+    }
     metadata: [
       {
         name: 'CURRENT_STACK'
