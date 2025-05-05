@@ -6,8 +6,10 @@ param appServicePlanName string
 param location string
 param runtimeStack string
 param appSettings array = []
+param connectionStrings array = []
 param tags object = {}
 param enableAppInsights bool = true
+param virtualNetworkSubnetId string = ''
 
 var appInsightsName = 'appi-${appServiceName}'
 
@@ -48,18 +50,30 @@ var finalAppSettings = [
 // Detect platform
 var isLinux = contains(toLower(runtimeStack), 'dotnetcore')
 
-// App Service resource
 resource appService 'Microsoft.Web/sites@2022-03-01' = {
   name: appServiceName
   location: location
   kind: isLinux ? 'app,linux' : 'app'
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     serverFarmId: appServicePlanName
+    reserved: isLinux
+    httpsOnly: true
+    clientAffinityEnabled: true
+    clientCertEnabled: false
+    clientCertMode: 'Optional'
+    minTlsVersion: '1.2'
+    scmMinTlsVersion: '1.2'
     siteConfig: {
       appSettings: finalAppSettings
+      connectionStrings: connectionStrings
       linuxFxVersion: isLinux ? runtimeStack : null
       netFrameworkVersion: !isLinux && contains(runtimeStack, 'v') ? runtimeStack : null
       alwaysOn: environment == 'prod'
+      http20Enabled: true
+      healthCheckPath: '/health'
       metadata: [
         {
           name: 'CURRENT_STACK'
@@ -67,8 +81,7 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
         }
       ]
     }
-    httpsOnly: true
-    reserved: isLinux // required for Linux apps
+    virtualNetworkSubnetId: virtualNetworkSubnetId
   }
 }
 
