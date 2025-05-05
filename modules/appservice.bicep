@@ -6,8 +6,8 @@ param appServicePlanName string
 param location string
 param runtimeStack string
 param appSettings array = []
-param connectionStrings array = [] // default is safe empty array
-param virtualNetworkSubnetId string = '' // default is safe empty string
+param connectionStrings array = []
+param virtualNetworkSubnetId string = ''
 param tags object = {}
 param enableAppInsights bool = true
 
@@ -25,27 +25,27 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppI
 }
 
 // App settings logic
-var appInsightsSettings = enableAppInsights ? [
-  {
-    name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-    value: appInsights.properties.InstrumentationKey
-  }
-  {
-    name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-    value: appInsights.properties.ConnectionString
-  }
-  {
-    name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
-    value: '~3'
-  }
-] : []
-
 var finalAppSettings = [
   {
     name: 'WEBSITE_RUN_FROM_PACKAGE'
     value: '1'
   }
-] ++ appInsightsSettings ++ appSettings
+  ...(enableAppInsights ? [
+    {
+      name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+      value: appInsights.properties.InstrumentationKey
+    }
+    {
+      name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+      value: appInsights.properties.ConnectionString
+    }
+    {
+      name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
+      value: '~3'
+    }
+  ] : [])
+  ...appSettings
+]
 
 // Detect platform
 var isLinux = contains(toLower(runtimeStack), 'dotnetcore')
@@ -71,6 +71,7 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
       http20Enabled: true
       minTlsVersion: '1.2'
       scmMinTlsVersion: '1.2'
+      healthCheckPath: '/health'
     }
     metadata: [
       {
