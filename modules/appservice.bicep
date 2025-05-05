@@ -4,14 +4,14 @@ param environment string
 param appServiceName string
 param appServicePlanName string
 param location string
-param runtimeStack string  // e.g., 'DOTNETCORE|7.0' or 'v4.0'
+param runtimeStack string
 param appSettings array = []
 param tags object = {}
 param enableAppInsights bool = true
 
 var appInsightsName = 'appi-${appServiceName}'
 
-// App Insights resource (optional)
+// App Insights (optional)
 resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppInsights) {
   name: appInsightsName
   location: location
@@ -22,7 +22,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppI
   }
 }
 
-// Build final app settings
+// App settings
 var finalAppSettings = [
   {
     name: 'WEBSITE_RUN_FROM_PACKAGE'
@@ -45,25 +45,30 @@ var finalAppSettings = [
   ...appSettings
 ]
 
-// Determine if Linux or Windows
+// Detect platform
 var isLinux = contains(toLower(runtimeStack), 'dotnetcore')
 
-// App Service
+// App Service resource
 resource appService 'Microsoft.Web/sites@2022-03-01' = {
   name: appServiceName
   location: location
   kind: isLinux ? 'app,linux' : 'app'
-  tags: tags
   properties: {
     serverFarmId: appServicePlanName
     siteConfig: {
       appSettings: finalAppSettings
-      alwaysOn: environment == 'prod'
       linuxFxVersion: isLinux ? runtimeStack : null
       netFrameworkVersion: !isLinux && contains(runtimeStack, 'v') ? runtimeStack : null
+      alwaysOn: environment == 'prod'
+      metadata: [
+        {
+          name: 'CURRENT_STACK'
+          value: isLinux ? 'dotnetcore' : 'dotnet'
+        }
+      ]
     }
     httpsOnly: true
-    reserved: isLinux  // required for Linux App Services
+    reserved: isLinux // required for Linux apps
   }
 }
 
