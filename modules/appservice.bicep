@@ -26,28 +26,28 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppI
   }
 }
 
-// App settings
+// App settings logic
+var appInsightsSettings = enableAppInsights ? [
+  {
+    name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+    value: appInsights.properties.InstrumentationKey
+  }
+  {
+    name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+    value: appInsights.properties.ConnectionString
+  }
+  {
+    name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
+    value: '~3'
+  }
+] : []
+
 var finalAppSettings = [
   {
     name: 'WEBSITE_RUN_FROM_PACKAGE'
     value: '1'
   }
-  ...(enableAppInsights ? [
-    {
-      name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-      value: appInsights.properties.InstrumentationKey
-    }
-    {
-      name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-      value: appInsights.properties.ConnectionString
-    }
-    {
-      name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
-      value: '~3'
-    }
-  ] : [])
-  ...appSettings
-]
+] ++ appInsightsSettings ++ appSettings
 
 // Detect platform
 var isLinux = contains(toLower(runtimeStack), 'dotnetcore')
@@ -64,25 +64,22 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
     reserved: isLinux
     httpsOnly: true
     clientAffinityEnabled: true
-    clientCertEnabled: false
-    clientCertMode: 'Optional'
-    minTlsVersion: '1.2'
-    scmMinTlsVersion: '1.2'
     siteConfig: {
       appSettings: finalAppSettings
+      connectionStrings: connectionStrings ?? []
       linuxFxVersion: isLinux ? runtimeStack : null
       netFrameworkVersion: !isLinux && contains(runtimeStack, 'v') ? runtimeStack : null
       alwaysOn: environment == 'prod'
       http20Enabled: true
-      healthCheckPath: '/health'
-      metadata: [
-        {
-          name: 'CURRENT_STACK'
-          value: isLinux ? 'dotnetcore' : 'dotnet'
-        }
-      ]
-      connectionStrings: connectionStrings ?? []
-    }
+      minTlsVersion: '1.2'
+      scmMinTlsVersion: '1.2'
+      }
+    metadata: [
+      {
+        name: 'CURRENT_STACK'
+        value: isLinux ? 'dotnetcore' : 'dotnet'
+      }
+    ]
     virtualNetworkSubnetId: empty(virtualNetworkSubnetId) ? null : virtualNetworkSubnetId
   }
 }
