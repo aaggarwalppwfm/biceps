@@ -6,10 +6,12 @@ param appServicePlanName string
 param location string
 param runtimeStack string
 param appSettings array = []
-param connectionStrings array = []
+@allowed([null, []])
+param connectionStrings array = null
+@allowed([null, ''])
+param virtualNetworkSubnetId string = null
 param tags object = {}
 param enableAppInsights bool = true
-param virtualNetworkSubnetId string = ''
 
 var appInsightsName = 'appi-${appServiceName}'
 
@@ -68,7 +70,6 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
     scmMinTlsVersion: '1.2'
     siteConfig: {
       appSettings: finalAppSettings
-      connectionStrings: connectionStrings
       linuxFxVersion: isLinux ? runtimeStack : null
       netFrameworkVersion: !isLinux && contains(runtimeStack, 'v') ? runtimeStack : null
       alwaysOn: environment == 'prod'
@@ -80,8 +81,9 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
           value: isLinux ? 'dotnetcore' : 'dotnet'
         }
       ]
+      connectionStrings: connectionStrings ?? []
     }
-    virtualNetworkSubnetId: virtualNetworkSubnetId
+    virtualNetworkSubnetId: empty(virtualNetworkSubnetId) ? null : virtualNetworkSubnetId
   }
 }
 
