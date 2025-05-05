@@ -57,18 +57,21 @@ var finalAppSettings = [
 resource appService 'Microsoft.Web/sites@2022-03-01' = {
   name: appServiceName
   location: location
+  kind: contains(toLower(runtimeStack), 'dotnetcore') ? 'app,linux' : 'app'
   tags: tags
   properties: {
     serverFarmId: appServicePlanName
+    reserved: contains(toLower(runtimeStack), 'dotnetcore')  // ✅ moved here
     siteConfig: {
       appSettings: finalAppSettings
-      linuxFxVersion: contains(runtimeStack, 'DOTNETCORE') ? runtimeStack : null
+      linuxFxVersion: contains(toLower(runtimeStack), 'dotnetcore') ? runtimeStack : null
       netFrameworkVersion: contains(runtimeStack, 'v') ? runtimeStack : null
       alwaysOn: environment == 'prod'
     }
     httpsOnly: true
   }
 }
+
 
 output appServiceId string = appService.id
 output appInsightsId string = enableAppInsights ? appInsights.id : ''
