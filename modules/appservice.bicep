@@ -1,21 +1,17 @@
-
-// appservice.bicep
-
 @allowed(['dev', 'prod'])
 param environment string
 
 param appServiceName string
 param appServicePlanName string
 param location string
-param runtimeStack string
+param runtimeStack string  // e.g., 'DOTNETCORE|7.0' or 'v4.0'
 param appSettings array = []
 param tags object = {}
 param enableAppInsights bool = true
 
-
 var appInsightsName = 'appi-${appServiceName}'
 
-
+// App Insights resource (optional)
 resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppInsights) {
   name: appInsightsName
   location: location
@@ -26,15 +22,12 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppI
   }
 }
 
-// Build final app settings array
+// Build final app settings
 var finalAppSettings = [
-  // Always add WEBSITE_RUN_FROM_PACKAGE = 1
   {
     name: 'WEBSITE_RUN_FROM_PACKAGE'
     value: '1'
   }
-
-  // Conditionally inject AppInsights settings
   ...(enableAppInsights ? [
     {
       name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
@@ -49,29 +42,30 @@ var finalAppSettings = [
       value: '~3'
     }
   ] : [])
-
-  // Add any additional user-supplied app settings
   ...appSettings
 ]
 
+// Determine if Linux or Windows
+var isLinux = contains(toLower(runtimeStack), 'dotnetcore')
+
+// App Service
 resource appService 'Microsoft.Web/sites@2022-03-01' = {
   name: appServiceName
   location: location
-  kind: contains(toLower(runtimeStack), 'dotnetcore') ? 'app,linux' : 'app'
+  kind: isLinux ? 'app,linux' : 'app'
   tags: tags
   properties: {
     serverFarmId: appServicePlanName
-    reserved: contains(toLower(runtimeStack), 'dotnetcore')  // ✅ moved here
     siteConfig: {
       appSettings: finalAppSettings
-      linuxFxVersion: contains(toLower(runtimeStack), 'dotnetcore') ? runtimeStack : null
-      netFrameworkVersion: contains(runtimeStack, 'v') ? runtimeStack : null
       alwaysOn: environment == 'prod'
+      linuxFxVersion: isLinux ? runtimeStack : null
+      netFrameworkVersion: !isLinux && contains(runtimeStack, 'v') ? runtimeStack : null
     }
     httpsOnly: true
+    reserved: isLinux  // required for Linux App Services
   }
 }
-
 
 output appServiceId string = appService.id
 output appInsightsId string = enableAppInsights ? appInsights.id : ''
